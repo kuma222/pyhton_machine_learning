@@ -1,0 +1,289 @@
+
+import csv
+import numpy as np
+import pandas as pd
+
+# from matplotlib import pyplot
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+import math
+
+import random
+
+w = np.array([2, 3])
+
+train=pd.read_csv("titanic/train.csv", header=0)
+
+
+train_dat = np.array
+train_dat = train.values
+
+train_dat= train_dat[:,[1,2,5]]
+
+#train_dat_list = np.array
+
+#欠損値削除
+#for item in train_dat:
+    
+  #  if not np.isnan(item[2]):
+ #       np.append(train_dat_list,item)
+
+        
+#print(len(train_dat_list))
+
+#train_dat = train_dat_list
+
+
+#print(train_dat)
+
+#plt.scatter(train_dat[:,1],train_dat[:,2])
+#plt.show()
+#plt.savefig('hogehoge.png')
+
+#print(train_dat[:,0] == 0)
+#print(train_dat[train_dat[:,0] == 0,:])
+
+
+t_dead=train_dat[train_dat[:,0] == 0,:]  #死んだ人
+t_alive=train_dat[train_dat[:,0] == 1,:] #生きた人
+
+
+w=np.array([1,1])
+b=np.array([1])  #バイアス
+
+
+sum = np.array([])
+
+
+for i in range(0,len(train_dat)):
+    if not  np.isnan(train_dat[i,2]):
+        sum = np.append(sum,train_dat[i,1]*w[0] + train_dat[i,2]*w[1] + b[0])
+        
+        
+
+#print(sum)
+    
+    
+
+
+
+
+    
+#sumの値が正か負か判断
+doa=np.array([])
+
+for i in range(0,len(sum)):
+#    print(sum[i])
+    if sum[i] >= 0:
+        doa = np.append(doa,1)  #alive
+    else:
+        doa = np.append(doa,0) #dead
+
+print("doa", doa)
+
+
+#答え合わせ tを求める
+
+t_vec = np.array([])
+for i in range(0,len(sum)):
+    if doa[i] == train_dat[i,0]:
+        t_vec = np.append(t_vec,1)
+    else:
+        t_vec = np.append(t_vec,-1)
+
+print(t_vec)
+
+
+#ヒンジ損失の計算 
+# ヒンジ損失 = max(0,-twx)
+#            = max(0, -t(w[0]*x[i,1]+w[1]*x[i,2]+b[0]))
+
+hinge_loss = np.array([])
+
+for i in range(0,len(sum)):
+    if not  np.isnan(train_dat[i,2]):
+        if t_vec[i] == 1:
+            hinge_loss = np.append(hinge_loss,0)
+        else:
+            hinge_loss = np.append(hinge_loss,w[0]*train_dat[i,1]+w[1]*train_dat[i,2]+b[0])        
+
+print("hinge_loss: ", hinge_loss)
+print("hinge_loss[0]", hinge_loss[0])
+
+#目的関数の計算
+#obj_func = np.sum(hinge_loss)
+
+#print(obj_func)
+print(hinge_loss[1:].sum())
+print(hinge_loss[0])
+ 
+#線を描いてみる
+# train_dat[i,1]*w[0] + train_dat[i,2]*w[1] + b[0]=0
+# x = train_dat[i,1]  ,  y = train_dat[i,2]
+# x*w[0] + y*w[1] +b = 0
+# y = -w[0]/w[1]*x - b/w[1] 
+
+x = np.linspace(0, 4, 100)
+y = -w[0]/w[1]*x - b/w[1]
+
+
+
+# plt.scatter(t_dead[:,1],t_dead[:,2],color="blue", markersize=1)
+# plt.scatter(t_alive[:,1]+0.25,t_alive[:,2],color="red", markersize=1)
+# plt.plot(x,y, color="r")
+#plt.show()
+# plt.savefig('dead_alive.png')
+
+
+##### パーセプトロン　パラメータ更新
+
+
+w=np.array([1,1])
+b=np.array([-50])  #バイアス
+
+#学習率h
+h = 1
+#学習回数　epoch 意味違うかも
+e = 500
+flg = 0
+
+#w 推移
+old_w0=np.array([])
+old_w1=np.array([])
+old_b=np.array([])
+
+plt.scatter(t_dead[:,1],t_dead[:,2],color="red", s=1)
+plt.scatter(t_alive[:,1]+0.25,t_alive[:,2],color="blue", s=1)
+
+# random.choice(range(0,890))
+
+
+k = range(0,891)
+
+
+for j in range(e):
+#    for k in range(0,890):
+    #for i in random.choice(range(0,890)):
+#        i = random.choice(range(0,890))
+
+    l = random.sample(k,890)
+    
+    for i in l:
+
+        if not  np.isnan(train_dat[i,2]):
+            sum = train_dat[i,1]*w[0] + train_dat[i,2]*w[1] + b[0]
+        
+            if sum > 0:
+                flg = 1   #生きていると判定
+            else:
+                flg = 0   #死んでると判定 
+        
+            #答え合わせ#
+        
+            #不正解の場合
+            if not train_dat[i,0] == flg:
+                # w = w + tx
+                
+                old_w0 = np.append(old_w0,w[0])
+                old_w1 = np.append(old_w1,w[1])
+                old_b = np.append(old_b,b)
+                
+                if flg == 1:
+                    #print( str(i) + ":" + " 不正解：生きてると誤認")
+                    w[0] = w[0] - h*train_dat[i,1]
+                    w[1] = w[1] - h*train_dat[i,2]
+            
+                    # xに影響しない共通項になるようbを加算
+                    b = b - h*1
+                else:
+                    #print( str(i) + ":" +" 不正解：死んでると誤認")
+                    w[0] = w[0] + h*train_dat[i,1]
+                    w[1] = w[1] + h*train_dat[i,2]
+            
+                    # xに影響しない共通項になるようbを加算
+                    b = b + h*1                
+            
+            
+            
+#    x = np.linspace(0, 4, 100)
+#    y = -w[0]/w[1]*x - b/w[1]
+#    plt.plot(x,y, color=(0,0+(1/e)*j,0))
+#    plt.savefig("dead_alive2.png")
+
+
+x = np.linspace(0, 4, 100)
+y = -w[0]/w[1]*x - b/w[1]
+plt.plot(x,y, color=('g'))
+plt.savefig("dead_alive_3.png")
+
+
+    
+np.set_printoptions(threshold=np.inf)
+print(old_w0)
+print(old_w1)
+print(old_b)
+
+plt.clf()
+plt.plot(range(len(old_w0)),old_w0)
+plt.savefig("old_w0.png")
+plt.plot(range(len(old_w1)),old_w1)
+plt.savefig("old_w1.png")
+plt.plot(range(len(old_b)),old_b)
+plt.savefig("old_b.png")
+
+
+#引いた線から正しく学習ができているかテスト
+
+
+#回答データ読み込み
+ans_raw =pd.read_csv("titanic/gender_submission.csv", header=0)
+ans = np.array
+ans = ans_raw.values
+ans= ans[:,[0,1]]
+
+#テストデータ読み込み
+test=pd.read_csv("titanic/test.csv", header=0)
+test_dat = np.array
+test_dat = test.values
+test_dat= test_dat[:,[0,1,4]]
+
+#正解の数
+correct = 0
+
+
+for i in range(0,417):
+    
+    #sumを計算
+    sum = test_dat[i,1]*w[0] + test_dat[i,2]*w[1] + b[0]
+
+    #生死判定 ( 生 = 1 , 死 = 0 )
+    if sum > 0:
+        if ans[i,1] == 1:
+            correct = correct +1
+    else:
+        if ans[i,1] == 0:
+            correct = correct +1
+        
+#正解率
+print(correct/418)
+
+        
+#plt.show()
+#plt.savefig('dead_alive.png')
+    
+    
+    
+        
+
+#print(sum)
+    
+    
+
+
+ 
+#https://www.slideshare.net/takosumipasta/ss-71777586
+#http://yaju3d.hatenablog.jp/entry/2017/08/27/233459
+
+
